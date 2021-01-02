@@ -154,7 +154,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_UART4_Init();
+  //MX_UART4_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
@@ -178,10 +178,10 @@ int main(void)
 
 
 	printf("Started\r\n");
+	HAL_Delay(1000);
   /* USER CODE END 2 */
 
   /* Infinite loop */
-
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
@@ -199,6 +199,11 @@ int main(void)
 			}
 			int age = age_detection();
 			printf("Max label %d\r\n", age);
+			char tx_data = age +'0';
+			HAL_UART_Transmit(&huart4, &tx_data, 1, 100);
+
+		   tx_data = '\r';
+			HAL_UART_Transmit(&huart4, &tx_data, 1, 100);
 			if (HAL_TIM_Base_Start_IT(&htim15) != HAL_OK)
 			{
 				Error_Handler();
