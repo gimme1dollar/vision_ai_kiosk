@@ -75,7 +75,7 @@ volatile uint8_t rx_data;
 
 // STEPPER MOTOR
 volatile uint32_t step_cnt = 0;
-volatile uint32_t step_limit = 0;
+volatile uint32_t step_target = 0;
 volatile uint8_t step_mode = STEP_MODE_STALL;
 volatile uint8_t step_init = 0;
 
@@ -86,7 +86,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
-void STEP_turn(uint16_t angle, int8_t direction, uint16_t dps);
+void STEP_turn(uint32_t count_step);
 uint16_t SR_ReadDistance(int *sr_state, unsigned long *sr_elapsed_us);
 uint64_t HAL_GetTickUS();
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
@@ -162,12 +162,18 @@ int main(void)
 #endif
 
 		if (step_init == 0)
-		{
-		}
-		else
-		{
-			/* code */
-		}
+      {
+      }
+      else
+      {
+         STEP_turn(14200);
+
+         HAL_Delay(14200);
+
+         STEP_turn(1000);
+         HAL_Delay(13200);//26.5
+         /* code */
+      }
 
 		/*
 	  if(step_mode == STEP_MODE_DYNAMIC) {
@@ -291,16 +297,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 }
 
-void STEP_turn(uint16_t angle, int8_t direction, uint16_t dps)
+void STEP_turn(uint32_t count_step)
 {
-	TIM2->PSC = (12000000u / (dps * TIM2->ARR)) * 8;
-	step_limit = __ANGLE_TO_STEP__(angle);
-	if (direction == STEP_DIRECTION_CW)
-		HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_SET);
-	else
-		HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_RESET);
-	step_cnt = step_cnt % 4;
-	step_mode = STEP_MODE_DYNAMIC;
+   step_target = count_step;
+   step_mode = STEP_MODE_DYNAMIC;
 }
 
 uint16_t SR_ReadDistance(int *sr_state, unsigned long *sr_elapsed_us)
@@ -360,33 +360,45 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	else if (htim->Instance == TIM2)
 	{
 		if (step_init == 0)
-		{
-			HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
-		}
-		else
-		{
-			switch (step_mode)
-			{
-			case STEP_MODE_DISABLE:
-				HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_SET);
-				break;
-			case STEP_MODE_STALL:
-				HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
-				step_limit = 0;
-				break;
-			case STEP_MODE_DYNAMIC:
-				HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
-				if (step_cnt < step_limit)
-				{
-					step_cnt++;
-					HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
-				}
-				break;
-			default:
-				step_mode = STEP_MODE_STALL;
-			}
-		}
+      {
+         HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_SET);
+         HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
+         HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
+      }
+      else
+      {
+         switch (step_mode)
+         {
+         case STEP_MODE_DISABLE:
+            HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_SET);
+            break;
+         case STEP_MODE_STALL:
+            HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
+            break;
+         case STEP_MODE_DYNAMIC:
+            HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
+            if (step_cnt < step_target)
+            {
+               step_cnt++;
+               HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_RESET);
+               HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
+            }
+            else if(step_cnt > step_target)
+            {
+               step_cnt--;
+               HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_SET);
+               HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
+            }
+            else
+            {
+               step_mode = STEP_MODE_STALL;
+            }
+
+            break;
+         default:
+            step_mode = STEP_MODE_STALL;
+         }
+      }
 	}
 }
 
