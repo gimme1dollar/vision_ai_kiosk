@@ -155,10 +155,10 @@ int main(void)
 	/* USER CODE BEGIN WHILE */
 	while (1)
 	{
-#if 0
-	//distance = SR_ReadDistance(&sr_state, &sr_elapsed_us);
-	//printf("Distance %d\r\n", distance);
-	//HAL_Delay(200);
+#if 1
+	distance = SR_ReadDistance(&sr_state, &sr_elapsed_us);
+	printf("Distance %d\r\n", distance);
+	HAL_Delay(200);
 #endif
 
 		if (step_init == 0)
@@ -276,8 +276,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			sr_state = SR_STATE_IDLE;
 			sr_elapsed_us = HAL_GetTickUS() - sr_echo_us;
 			break;
-		default:
-			sr_state = SR_STATE_IDLE;
 		}
 	}
 	else if (GPIO_Pin == BUTTON_EXTI13_Pin)
@@ -347,8 +345,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				HAL_GPIO_WritePin(SR_TRIG_Port, SR_TRIG_Pin, GPIO_PIN_RESET);
 			}
 			break;
-		default:
-			sr_state = SR_STATE_IDLE;
 		}
 
 		// Blink LED2 every seconds
@@ -395,8 +391,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             }
 
             break;
-         default:
-            step_mode = STEP_MODE_STALL;
          }
       }
 	}
