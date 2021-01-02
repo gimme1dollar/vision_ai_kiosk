@@ -47,6 +47,10 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
+#define __ANGLE_TO_STEP__(x) ((float)x/0.9f)
+#define __STEP_SET_ANGLE__(x) step_limit=__ANGLE_TO_STEP__(x)
+#define __STEP_SET_SPEED__(dps) TIM2->PSC=(8000000u/(dps*TIM2->ARR))*18
+#define __BUF_SIZE__(buf) (sizeof(buf)/sizeof(*buf))
 
 /* USER CODE END EM */
 
@@ -218,6 +222,13 @@ void Error_Handler(void);
 #define SR_ECHO_Pin ARD_A5_Pin
 #define SR_TRIG_Port ARD_A4_GPIO_Port
 #define SR_TRIG_Pin ARD_A4_Pin
+
+#define STEP_PULSE_Port ARD_D4_GPIO_Port
+#define STEP_DIR_Port ARD_D5_GPIO_Port
+#define STEP_EN_Port ARD_D9_GPIO_Port
+#define STEP_PULSE_Pin ARD_D4_Pin
+#define STEP_DIR_Pin ARD_D5_Pin
+#define STEP_EN_Pin ARD_D9_Pin
 
 /* USER CODE END Private defines */
 

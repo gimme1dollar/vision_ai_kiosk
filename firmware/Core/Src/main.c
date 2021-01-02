@@ -35,11 +35,17 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+// SR-HC14
 #define SR_STATE_IDLE 0  // idle
 #define SR_STATE_REQ 1  // user requested to measure
 #define SR_STATE_TRIG 2 // triggering
 #define SR_STATE_WAIT 3 // waiting echo back
 #define SR_STATE_ECHO 4 // measuring echo pulse duration
+
+// STEPPER MOTOR
+#define STEP_DIRECTION_CW 0
+#define STEP_DIRECTION_CCW 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -53,6 +59,7 @@
 
 // Timer instances and ticks
 extern TIM_HandleTypeDef htim15;
+extern TIM_HandleTypeDef htim2;
 volatile uint64_t us_count = 0;
 
 // SR-HC14
@@ -62,6 +69,11 @@ volatile uint32_t sr_elapsed_us;
 
 // USART
 volatile uint8_t rx_data;
+
+// STEPPER MOTOR
+volatile uint32_t step_cnt=0;
+volatile uint32_t step_limit = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -69,6 +81,8 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
+void STEP_disable(void);
+void STEP_turn(uint16_t angle, int8_t direction, uint16_t dps);
 uint16_t SR_ReadDistance(int* sr_state, unsigned long* sr_elapsed_us);
 uint64_t HAL_GetTickUS();
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
@@ -90,6 +104,7 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 	int16_t distance = 0;
+	int8_t phase = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -115,15 +130,17 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_TIM15_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
 	if(HAL_TIM_Base_Start_IT(&htim15) != HAL_OK) {
 		Error_Handler();
 	}
+	if(HAL_TIM_Base_Start_IT(&htim2) != HAL_OK) {
+		Error_Handler();
+	}
 
 	HAL_UART_Receive_IT(&huart1, &rx_data, 1);
-
-	HAL_Delay(100);
 
 	printf("Started\r\n");
   /* USER CODE END 2 */
@@ -133,10 +150,19 @@ int main(void)
   while (1)
   {
 
-	distance = SR_ReadDistance(&sr_state, &sr_elapsed_us);
-	printf("Distance %d\r\n", distance);
-	HAL_Delay(200);
+	//distance = SR_ReadDistance(&sr_state, &sr_elapsed_us);
+	//printf("Distance %d\r\n", distance);
+	//HAL_Delay(200);
 
+	if(phase) {
+		STEP_turn(180*2, STEP_DIRECTION_CW, 180);
+		HAL_Delay(2000);
+	}
+	else {
+		STEP_turn(180*2, STEP_DIRECTION_CCW, 180);
+		HAL_Delay(2000);
+	}
+	phase = (phase+1) % 2;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -224,6 +250,25 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 }
 
+void STEP_disable(void)
+{
+	HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_SET);
+}
+
+void STEP_turn(uint16_t angle, int8_t direction, uint16_t dps)
+{
+	HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
+
+  	TIM2->PSC = (12000000u/(dps*TIM2->ARR))*8;
+	step_limit = __ANGLE_TO_STEP__(angle);
+	if(direction == STEP_DIRECTION_CW)
+		HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_SET);
+	else
+		HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_RESET);
+	step_cnt = step_cnt % 4;
+}
+
+
 uint16_t SR_ReadDistance(int* sr_state, unsigned long* sr_elapsed_us)
 {
 	uint32_t t = HAL_GetTick();
@@ -269,6 +314,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		// Blink LED2 every seconds
 		if(HAL_GetTickUS() % 1000000u == 0) {
 			HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
+		}
+	}
+	else if(htim->Instance == TIM2) {
+		if(step_cnt < step_limit) {
+			printf(".\r\n");
+			step_cnt++;
+			HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
 		}
 	}
 }
