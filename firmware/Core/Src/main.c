@@ -73,6 +73,7 @@ volatile uint8_t rx_data;
 // STEPPER MOTOR
 volatile uint32_t step_cnt=0;
 volatile uint32_t step_limit = 0;
+volatile uint8_t step_enable = 0;
 
 /* USER CODE END PV */
 
@@ -81,6 +82,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
+void STEP_stall(void);
 void STEP_disable(void);
 void STEP_turn(uint16_t angle, int8_t direction, uint16_t dps);
 uint16_t SR_ReadDistance(int* sr_state, unsigned long* sr_elapsed_us);
@@ -149,20 +151,24 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+#if 0
 	//distance = SR_ReadDistance(&sr_state, &sr_elapsed_us);
 	//printf("Distance %d\r\n", distance);
 	//HAL_Delay(200);
-
-	if(phase) {
-		STEP_turn(180*2, STEP_DIRECTION_CW, 180);
-		HAL_Delay(2000);
-	}
-	else {
-		STEP_turn(180*2, STEP_DIRECTION_CCW, 180);
-		HAL_Delay(2000);
-	}
-	phase = (phase+1) % 2;
+#endif
+	  if(step_enable) {
+		if(phase) {
+			STEP_turn(180*10, STEP_DIRECTION_CW, 180*12);
+			HAL_Delay(4000);
+		}
+		else {
+			STEP_turn(180*10, STEP_DIRECTION_CCW, 180*12);
+			HAL_Delay(4000);
+		}
+		phase = (phase+1) % 2;
+	  }
+	  else
+		  STEP_stall();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -246,13 +252,20 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		}
 	}
 	else if(GPIO_Pin == BUTTON_EXTI13_Pin) {
-		printf("BTN %d\r\n", sr_state);
+		step_enable = !step_enable;
+		printf("STEP_ENABLE %d, %d\r\n", step_enable, TIM2->PSC);
 	}
 }
 
 void STEP_disable(void)
 {
 	HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_SET);
+}
+
+void STEP_stall(void)
+{
+	HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
+	step_limit = 0;
 }
 
 void STEP_turn(uint16_t angle, int8_t direction, uint16_t dps)
@@ -318,7 +331,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 	else if(htim->Instance == TIM2) {
 		if(step_cnt < step_limit) {
-			printf(".\r\n");
 			step_cnt++;
 			HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
 		}
