@@ -37,9 +37,15 @@
         * Output
         * EVENT_OUT
         * EXTI
+     PC0   ------> ADCx_IN1
+     PC1   ------> ADCx_IN2
+     PC2   ------> ADCx_IN3
+     PC3   ------> ADCx_IN4
      PA5   ------> SPI1_SCK
      PA6   ------> SPI1_MISO
      PA7   ------> SPI1_MOSI
+     PC4   ------> ADCx_IN13
+     PC5   ------> ADCx_IN14
      PB1   ------> S_TIM3_CH4
      PE7   ------> S_DATAIN2DFSDM1
      PE9   ------> S_CKOUTDFSDM1
@@ -106,6 +112,14 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pins : PCPin PCPin PCPin */
   GPIO_InitStruct.Pin = BUTTON_EXTI13_Pin|VL53L0X_GPIO1_EXTI7_Pin|LSM3MDL_DRDY_EXTI8_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PCPin PCPin PCPin PCPin
+                           PCPin PCPin */
+  GPIO_InitStruct.Pin = ARD_A5_Pin|ARD_A4_Pin|ARD_A3_Pin|ARD_A2_Pin
+                          |ARD_A1_Pin|ARD_A0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG_ADC_CONTROL;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
