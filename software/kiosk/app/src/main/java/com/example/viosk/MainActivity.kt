@@ -28,7 +28,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import java.io.IOException
-import java.lang.Exception
+import java.lang.Math.min
 import java.util.*
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
@@ -36,10 +36,13 @@ import kotlin.concurrent.thread
 
 
 class MainActivity : AppCompatActivity() {
-    private val MAX_PREVIEW_WIDTH = 1920
-    private val MAX_PREVIEW_HEIGHT = 1080
-    private val REQUEST_CAMERA_PERMISSION = 1
-    private val BT_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+    companion object {
+        private const val MAX_PREVIEW_WIDTH = 1920
+        private const val MAX_PREVIEW_HEIGHT = 1080
+        private const val REQUEST_CAMERA_PERMISSION = 1
+        private const val BLUETOOTH_UUID = "00001101-0000-1000-8000-00805F9B34FB"
+        private const val BLUETOOTH_DEVICE_ADDRESS = "98:D3:32:70:4E:64"
+    }
 
     private var mBluetoothAdapter: BluetoothAdapter? = null
     private var mBluetoothSocket: BluetoothSocket? = null
@@ -54,7 +57,7 @@ class MainActivity : AppCompatActivity() {
     private var mBackgroundHandler: Handler? = null
     private var mPreviewRequestBuilder: CaptureRequest.Builder? = null
     private var mPreviewRequest: CaptureRequest? = null
-    private val mCameraOpenCloseLock: Semaphore = Semaphore(1)
+    private val mCameraLock: Semaphore = Semaphore(1)
 
     private lateinit var mTextureView: TextureView
     private lateinit var mNoticeTextView: TextView
@@ -75,42 +78,23 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        Log.e("thread", "resumed")
         startBackgroundThread()
-        waitingMode()
+        onCustomerPending()
     }
 
     override fun onPause() {
-        detectingMode()
+        onCustomerAnalyzing()
         stopBackgroundThread()
-        if (mBluetoothReceiver != null && mBluetoothReceiver!!.isAlive) {
-            Log.e("thread", "interrupted!")
-            mBluetoothReceiver!!.interrupt()
-        }
+        stopBluetoothReceivingThread()
         super.onPause()
     }
 
-    private fun connectToBluetoothDevice() {
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-        if (mBluetoothAdapter == null) {
-            Toast.makeText(applicationContext, "Bluetooth device not available", Toast.LENGTH_LONG).show()
-            finish()
-        } else if (!mBluetoothAdapter!!.isEnabled) {
-            val turnBTon = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            startActivityForResult(turnBTon, 1)
-        }
-
-        try {
-            val dispositive: BluetoothDevice = mBluetoothAdapter!!.getRemoteDevice("98:D3:32:70:4E:64")
-            mBluetoothSocket = dispositive.createInsecureRfcommSocketToServiceRecord(BT_UUID)
-            BluetoothAdapter.getDefaultAdapter().cancelDiscovery()
-            mBluetoothSocket!!.connect()
-        } catch (e: IOException) {
-            Log.d("btconnect", e.toString())
-        }
+    override fun onDestroy() {
+        mBluetoothSocket?.close()
+        super.onDestroy()
     }
 
-    private fun waitingMode() {
+    private fun onCustomerPending() {
         mNoticeTextView.text = "화면에 얼굴을 맞춰주세요. 이후에 주문이 진행됩니다."
         mProgressBar.visibility = View.INVISIBLE
 
@@ -120,33 +104,51 @@ class MainActivity : AppCompatActivity() {
             mTextureView.surfaceTextureListener = mSurfaceTextureListener
         }
 
-        if (mBluetoothReceiver != null && mBluetoothReceiver!!.isAlive) {
-            Log.e("thread", "interrupted?")
-            mBluetoothReceiver!!.interrupt()
-        }
-
+        stopBluetoothReceivingThread()
         mBluetoothReceiver = thread(start=true) {
             try {
-                val ageClass = readBluetoothInput()
-                runOnUiThread {
-                    detectingMode()
-                }
+                val ageClass = readBluetoothInput().substring(0, 1).toInt()
+                runOnUiThread { onCustomerAnalyzing() }
                 readBluetoothInput()
                 runOnUiThread {
                     val intent = Intent(this, MenuActivity::class.java)
-                        .putExtra("age", ageClass[0].toInt())
+                        .putExtra("age", ageClass)
                     startActivity(intent)
                 }
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 Log.e("thread", e.toString())
             }
         }
     }
 
-    private fun detectingMode() {
+    private fun onCustomerAnalyzing() {
         closeCamera()
         mNoticeTextView.text = "나이를 확인하는 중입니다. 잠시만 기다려주세요."
         mProgressBar.visibility = View.VISIBLE
+    }
+
+    private fun stopBluetoothReceivingThread() {
+        if (mBluetoothReceiver != null && mBluetoothReceiver!!.isAlive) {
+            mBluetoothReceiver!!.interrupt()
+        }
+    }
+
+    private fun connectToBluetoothDevice() {
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        if (mBluetoothAdapter == null) {
+            showToast("Bluetooth device not available")
+            finish()
+        } else if (!mBluetoothAdapter!!.isEnabled) {
+            val turnBluetoothOn = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            startActivityForResult(turnBluetoothOn, REQUEST_CAMERA_PERMISSION)
+        }
+
+        val dispositive: BluetoothDevice =
+            mBluetoothAdapter!!.getRemoteDevice(BLUETOOTH_DEVICE_ADDRESS)
+        mBluetoothSocket =
+            dispositive.createInsecureRfcommSocketToServiceRecord(UUID.fromString(BLUETOOTH_UUID))
+        BluetoothAdapter.getDefaultAdapter().cancelDiscovery()
+        mBluetoothSocket!!.connect()
     }
 
     private fun readBluetoothInput(): String {
@@ -154,20 +156,21 @@ class MainActivity : AppCompatActivity() {
         val inputStream = mBluetoothSocket!!.inputStream
         var totalString = ""
 
-        try {
-            while (!totalString.endsWith("\r")) {
-                val bytes = inputStream.read(buffer)
-                if (bytes > 0) {
-                    val str = String(buffer, 0, bytes)
-                    totalString += str
-                    Log.d("btreceive", String(buffer, 0, bytes))
-                }
+        while (!totalString.endsWith("\r")) {
+            val bytes = inputStream.read(buffer)
+            if (Thread.interrupted()) {
+                Log.d("btconnect", "interrupt!")
+                throw Exception("thread stopping due to interrupt.")
             }
-            return totalString
-        } catch (e: Exception) {
-            inputStream.close()
-            throw e
+
+            if (bytes > 0) {
+                val str = String(buffer, 0, bytes)
+                totalString += str
+            }
         }
+
+        Log.d("btconnect", "string received: $totalString")
+        return totalString
     }
 
     private fun openCamera(width: Int, height: Int) {
@@ -177,11 +180,11 @@ class MainActivity : AppCompatActivity() {
             requestCameraPermission()
             return
         }
-        setUpCameraOutputs(width, height)
+        setCameraOutputs(width, height)
         configureTransform(width, height)
         val manager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {
-            if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
+            if (!mCameraLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw RuntimeException("Time out waiting to lock camera opening.")
             }
             manager.openCamera(mCameraId!!, mStateCallback, mBackgroundHandler)
@@ -194,45 +197,34 @@ class MainActivity : AppCompatActivity() {
 
     private fun closeCamera() {
         try {
-            mCameraOpenCloseLock.acquire()
-            if (null != mCaptureSession) {
-                mCaptureSession!!.close()
-                mCaptureSession = null
-            }
-            if (null != mCameraDevice) {
-                mCameraDevice!!.close()
-                mCameraDevice = null
-            }
-            if (null != mImageReader) {
-                mImageReader!!.close();
-                mImageReader = null;
-            }
+            mCameraLock.acquire()
+            mCaptureSession?.close()
+            mCaptureSession = null
+
+            mCameraDevice?.close()
+            mCameraDevice = null
+
+            mImageReader?.close()
+            mImageReader = null
         } catch (e: InterruptedException) {
             throw java.lang.RuntimeException("Interrupted while trying to lock camera closing.", e)
         } finally {
-            mCameraOpenCloseLock.release()
+            mCameraLock.release()
         }
     }
 
-    private fun setUpCameraOutputs(width: Int, height: Int) {
+    private fun setCameraOutputs(width: Int, height: Int) {
         val manager = getSystemService(CAMERA_SERVICE) as CameraManager
         try {
             for (cameraId in manager.cameraIdList) {
                 val characteristics = manager.getCameraCharacteristics(cameraId)
-
-                // We don't use a front facing camera in this sample.
+                val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                    ?: continue
                 val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
                 if (facing == null || facing != CameraCharacteristics.LENS_FACING_FRONT) {
                     continue
                 }
-                val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-                    ?: continue
 
-                // For still image captures, we use the largest available size.
-//                val largest: Size = Collections.max(
-//                    Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
-//                    CompareSizesByArea()
-//                )
                 val largest: Size? = map.getOutputSizes(ImageFormat.JPEG).maxWithOrNull(
                     CompareSizesByArea()
                 )
@@ -243,62 +235,41 @@ class MainActivity : AppCompatActivity() {
                 mImageReader!!.setOnImageAvailableListener(
                     null, mBackgroundHandler
                 )
+
                 val displaySize = Point()
                 windowManager.defaultDisplay.getSize(displaySize)
-                var maxPreviewWidth: Int = displaySize.x
-                var maxPreviewHeight: Int = displaySize.y
-                if (maxPreviewWidth > MAX_PREVIEW_WIDTH) {
-                    maxPreviewWidth = MAX_PREVIEW_WIDTH
-                }
-                if (maxPreviewHeight > MAX_PREVIEW_HEIGHT) {
-                    maxPreviewHeight = MAX_PREVIEW_HEIGHT
-                }
+                val maxPreviewWidth = displaySize.x.coerceAtMost(MAX_PREVIEW_WIDTH)
+                val maxPreviewHeight = displaySize.y.coerceAtMost(MAX_PREVIEW_HEIGHT)
 
-                // Danger! Attempting to use too large a preview size could  exceed the camera
-                // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
-                // garbage capture data.
                 mPreviewSize = chooseOptimalSize(
                     map.getOutputSizes(SurfaceTexture::class.java),
                     width, height, maxPreviewWidth,
                     maxPreviewHeight, largest
                 )
                 mCameraId = cameraId
-                return
             }
         } catch (e: CameraAccessException) {
             e.printStackTrace()
         } catch (e: NullPointerException) {
-            // Currently an NPE is thrown when the Camera2API is used but not supported on the
-            // device this code runs.
-            Toast.makeText(
-                this@MainActivity,
-                "Camera2 API not supported on this device",
-                Toast.LENGTH_LONG
-            ).show()
+            showToast("Camera2 API not supported on this device")
         }
     }
 
     private fun createCameraPreviewSession() {
         try {
             val texture = mTextureView.surfaceTexture!!
-
-            // We configure the size of default buffer to be the size of camera preview we want.
             texture.setDefaultBufferSize(mPreviewSize!!.width, mPreviewSize!!.height)
 
-            // This is the output Surface we need to start preview.
             val surface = Surface(texture)
-
-            // We set up a CaptureRequest.Builder with the output Surface.
             mPreviewRequestBuilder = mCameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
             mPreviewRequestBuilder!!.addTarget(surface)
 
-            // Here, we create a CameraCaptureSession for camera preview.
             mCameraDevice!!.createCaptureSession(
                 listOf(surface, mImageReader!!.surface),
                 object : CameraCaptureSession.StateCallback() {
                     override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
-                        // The camera is already closed
-                        if (null == mCameraDevice) {
+                        // Camera already closed.
+                        if (mCameraDevice == null) {
                             return
                         }
 
@@ -322,9 +293,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
 
-                    override fun onConfigureFailed(
-                        cameraCaptureSession: CameraCaptureSession
-                    ) {
+                    override fun onConfigureFailed(cameraCaptureSession: CameraCaptureSession) {
                         showToast("Failed")
                     }
                 }, null
@@ -339,14 +308,14 @@ class MainActivity : AppCompatActivity() {
             AlertDialog.Builder(this@MainActivity)
                 .setMessage("R string request permission")
                 .setPositiveButton(android.R.string.ok,
-                    DialogInterface.OnClickListener { dialog, which ->
+                    DialogInterface.OnClickListener { _, _ ->
                         ActivityCompat.requestPermissions(
                             this@MainActivity, arrayOf(Manifest.permission.CAMERA),
                             REQUEST_CAMERA_PERMISSION
                         )
                     })
                 .setNegativeButton(android.R.string.cancel,
-                    DialogInterface.OnClickListener { dialog, which -> finish() })
+                    DialogInterface.OnClickListener { _, _ -> finish() })
                 .create()
         } else {
             ActivityCompat.requestPermissions(
@@ -394,33 +363,27 @@ class MainActivity : AppCompatActivity() {
         choices: Array<Size>, textureViewWidth: Int,
         textureViewHeight: Int, maxWidth: Int, maxHeight: Int, aspectRatio: Size
     ): Size? {
-
-        // Collect the supported resolutions that are at least as big as the preview Surface
-        val bigEnough: MutableList<Size> = ArrayList()
-        // Collect the supported resolutions that are smaller than the preview Surface
-        val notBigEnough: MutableList<Size> = ArrayList()
         val w = aspectRatio.width
         val h = aspectRatio.height
-        for (option in choices) {
-            if (option.width <= maxWidth && option.height <= maxHeight && option.height == option.width * h / w) {
-                if (option.width >= textureViewWidth &&
-                    option.height >= textureViewHeight
-                ) {
-                    bigEnough.add(option)
-                } else {
-                    notBigEnough.add(option)
-                }
-            }
+
+        val validOptions = choices.filter { option ->
+            option.width <= maxWidth
+                    && option.height <= maxHeight
+                    && option.height == option.width * h / w
+        }
+        val (optionsBigEnough, optionsNotBigEnough) = validOptions.partition { option ->
+            option.width >= textureViewWidth
+                    && option.height >= textureViewHeight
         }
 
         // Pick the smallest of those big enough. If there is no one big enough, pick the
         // largest of those not big enough.
         return when {
-            bigEnough.isNotEmpty() -> {
-                Collections.min(bigEnough, CompareSizesByArea())
+            optionsBigEnough.isNotEmpty() -> {
+                Collections.min(optionsBigEnough, CompareSizesByArea())
             }
-            notBigEnough.isNotEmpty() -> {
-                Collections.max(notBigEnough, CompareSizesByArea())
+            optionsNotBigEnough.isNotEmpty() -> {
+                Collections.max(optionsNotBigEnough, CompareSizesByArea())
             }
             else -> {
                 Log.e("Camera2", "Couldn't find any suitable preview size")
@@ -430,7 +393,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun configureTransform(viewWidth: Int, viewHeight: Int) {
-        if (null == mPreviewSize) {
+        if (mPreviewSize == null) {
             return
         }
         val rotation = windowManager.defaultDisplay.rotation
@@ -444,14 +407,15 @@ class MainActivity : AppCompatActivity() {
         )
         val centerX: Float = viewRect.centerX()
         val centerY: Float = viewRect.centerY()
-        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
+        if (rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270) {
             bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY())
             matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL)
             val scale =
-                (viewHeight.toFloat() / mPreviewSize!!.height).coerceAtLeast(viewWidth.toFloat() / mPreviewSize!!.width)
+                (viewHeight.toFloat() / mPreviewSize!!.height)
+                    .coerceAtLeast(viewWidth.toFloat() / mPreviewSize!!.width)
             matrix.postScale(scale, scale, centerX, centerY)
             matrix.postRotate((90 * (rotation - 2)).toFloat(), centerX, centerY)
-        } else if (Surface.ROTATION_180 == rotation) {
+        } else if (rotation == Surface.ROTATION_180) {
             matrix.postRotate(180F, centerX, centerY)
         }
         mTextureView.setTransform(matrix)
@@ -474,19 +438,19 @@ class MainActivity : AppCompatActivity() {
     private val mStateCallback: CameraDevice.StateCallback = object : CameraDevice.StateCallback() {
         override fun onOpened(cameraDevice: CameraDevice) {
             // This method is called when the camera is opened.  We start camera preview here.
-            mCameraOpenCloseLock.release()
+            mCameraLock.release()
             mCameraDevice = cameraDevice
             createCameraPreviewSession()
         }
 
         override fun onDisconnected(cameraDevice: CameraDevice) {
-            mCameraOpenCloseLock.release()
+            mCameraLock.release()
             cameraDevice.close()
             mCameraDevice = null
         }
 
         override fun onError(cameraDevice: CameraDevice, error: Int) {
-            mCameraOpenCloseLock.release()
+            mCameraLock.release()
             cameraDevice.close()
             mCameraDevice = null
             finish()
