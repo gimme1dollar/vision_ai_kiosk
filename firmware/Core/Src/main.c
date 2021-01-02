@@ -19,9 +19,11 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "crc.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
+#include "app_x-cube-ai.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -60,6 +62,11 @@
 
 /* USER CODE BEGIN PV */
 
+// AI
+volatile float img[40000];
+volatile uint16_t img_idx = 0;
+volatile uint8_t rx_data;
+
 // Timer instances and ticks
 extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim2;
@@ -97,7 +104,25 @@ int _write(int file, char *ptr, int len);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+int age_detection()
+{
+	float aiout[4];
+	int max = 0;
 
+	HAL_UART_Transmit(&huart2, 'a', 1, 1000);
+	while(img_idx<40000);
+
+	MX_X_CUBE_AI_Process(img, aiout);
+
+	for (int i = 0; i < 6; i++){
+		if(aiout[i] > aiout[max])
+			max = i;
+	}
+	//HAL_UART_Transmit(&huart2, img, 40000, 1000);
+	img_idx = 0;
+	memset(img, 0, sizeof(img));
+	return max;
+}
 /* USER CODE END 0 */
 
 /**
@@ -106,36 +131,41 @@ int _write(int file, char *ptr, int len);
   */
 int main(void)
 {
-	/* USER CODE BEGIN 1 */
+  /* USER CODE BEGIN 1 */
 	int16_t distance = 0;
 	int8_t phase = 0;
-	/* USER CODE END 1 */
+  /* USER CODE END 1 */
 
-	/* MCU Configuration--------------------------------------------------------*/
+  /* MCU Configuration--------------------------------------------------------*/
 
-	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
 
-	/* USER CODE BEGIN Init */
+  /* USER CODE BEGIN Init */
 
-	/* USER CODE END Init */
+  /* USER CODE END Init */
 
-	/* Configure the system clock */
-	SystemClock_Config();
+  /* Configure the system clock */
+  SystemClock_Config();
 
-	/* USER CODE BEGIN SysInit */
+  /* USER CODE BEGIN SysInit */
 
-	/* USER CODE END SysInit */
+  /* USER CODE END SysInit */
 
-	/* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_UART4_Init();
-	MX_USART1_UART_Init();
-	MX_USART2_UART_Init();
-	MX_USART3_UART_Init();
-	MX_TIM15_Init();
-	MX_TIM2_Init();
-	/* USER CODE BEGIN 2 */
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_UART4_Init();
+  MX_USART1_UART_Init();
+  MX_USART2_UART_Init();
+  MX_USART3_UART_Init();
+  MX_TIM15_Init();
+  MX_TIM2_Init();
+  MX_CRC_Init();
+  MX_X_CUBE_AI_Init();
+  /* USER CODE BEGIN 2 */
+
+	HAL_UART_Receive_IT(&huart1, &rx_data, 1);
+	HAL_UART_Receive_IT(&huart2, &rx_data, 1);
 
 	if (HAL_TIM_Base_Start_IT(&htim15) != HAL_OK)
 	{
@@ -146,26 +176,48 @@ int main(void)
 		Error_Handler();
 	}
 
-	HAL_UART_Receive_IT(&huart1, &rx_data, 1);
 
 	printf("Started\r\n");
-	/* USER CODE END 2 */
+  /* USER CODE END 2 */
 
-	/* Infinite loop */
-	/* USER CODE BEGIN WHILE */
+  /* Infinite loop */
+
+  /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-#if 1
-	distance = SR_ReadDistance(&sr_state, &sr_elapsed_us);
-	printf("Distance %d\r\n", distance);
-	HAL_Delay(200);
-#endif
+		distance = SR_ReadDistance(&sr_state, &sr_elapsed_us);
+		printf("Distance %d\r\n", distance);
+		HAL_Delay(200);
+		if(distance < 40) {
+			if (HAL_TIM_Base_Stop_IT(&htim15) != HAL_OK)
+			{
+				Error_Handler();
+			}
+			if (HAL_TIM_Base_Stop_IT(&htim2) != HAL_OK)
+			{
+				Error_Handler();
+			}
+			int age = age_detection();
+			printf("Max label %d\r\n", age);
+			if (HAL_TIM_Base_Start_IT(&htim15) != HAL_OK)
+			{
+				Error_Handler();
+			}
+			if (HAL_TIM_Base_Start_IT(&htim2) != HAL_OK)
+			{
+				Error_Handler();
+			}
+		}
 
-		if (step_init == 0)
-      {
+#if 0
+
+		if (step_init == 0) {
       }
+		// 180 = 23 / 160 = 79
       else
       {
+    	  int height = (79-distance)
+    	  uint32_t pos =
          STEP_turn(14200);
 
          HAL_Delay(14200);
@@ -174,7 +226,7 @@ int main(void)
          HAL_Delay(13200);//26.5
          /* code */
       }
-
+#endif
 		/*
 	  if(step_mode == STEP_MODE_DYNAMIC) {
 		if(phase) {
@@ -195,12 +247,14 @@ int main(void)
 
 
 */
+#if 0
+    /* USER CODE END WHILE */
 
-		/* USER CODE END WHILE */
-
-		/* USER CODE BEGIN 3 */
+  MX_X_CUBE_AI_Process();
+    /* USER CODE BEGIN 3 */
+#endif
 	}
-	/* USER CODE END 3 */
+  /* USER CODE END 3 */
 }
 
 /**
@@ -209,55 +263,57 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
-	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-	RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
-	/** Configure the main internal regulator output voltage
+  /** Configure the main internal regulator output voltage
   */
-	if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	/** Initializes the RCC Oscillators according to the specified parameters
+  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
-	RCC_OscInitStruct.MSIState = RCC_MSI_ON;
-	RCC_OscInitStruct.MSICalibrationValue = 0;
-	RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
-	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
-	RCC_OscInitStruct.PLL.PLLM = 1;
-	RCC_OscInitStruct.PLL.PLLN = 60;
-	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-	RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
-	RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	/** Initializes the CPU, AHB and APB buses clocks
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
+  RCC_OscInitStruct.MSIState = RCC_MSI_ON;
+  RCC_OscInitStruct.MSICalibrationValue = 0;
+  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
+  RCC_OscInitStruct.PLL.PLLM = 1;
+  RCC_OscInitStruct.PLL.PLLN = 60;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
+  RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Initializes the CPU, AHB and APB buses clocks
   */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1 | RCC_PERIPHCLK_USART2 | RCC_PERIPHCLK_USART3 | RCC_PERIPHCLK_UART4;
-	PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
-	PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
-	PeriphClkInit.Usart3ClockSelection = RCC_USART3CLKSOURCE_PCLK1;
-	PeriphClkInit.Uart4ClockSelection = RCC_UART4CLKSOURCE_PCLK1;
-	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-	{
-		Error_Handler();
-	}
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1|RCC_PERIPHCLK_USART2
+                              |RCC_PERIPHCLK_USART3|RCC_PERIPHCLK_UART4;
+  PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
+  PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
+  PeriphClkInit.Usart3ClockSelection = RCC_USART3CLKSOURCE_PCLK1;
+  PeriphClkInit.Uart4ClockSelection = RCC_UART4CLKSOURCE_PCLK1;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /* USER CODE BEGIN 4 */
@@ -400,8 +456,17 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if (huart->Instance == USART1)
 	{
-		HAL_UART_Receive_IT(&huart, &rx_data, 1);
-		HAL_UART_Transmit(&huart, &rx_data, 1, 100);
+		HAL_UART_Receive_IT(&huart1, &rx_data, 1);
+		HAL_UART_Transmit(&huart1, &rx_data, 1, 100);
+	}
+	if(huart->Instance == USART2) {
+		HAL_UART_Receive_IT(&huart2, &rx_data, 1);
+//		HAL_UART_Transmit(&huart2, &rx_data, 1, 1);
+		if(img_idx<40000)
+			img[img_idx++] = rx_data;
+		else
+			HAL_UART_Transmit(&huart2, &rx_data, 1, 1);
+
 	}
 }
 
@@ -431,16 +496,16 @@ int _write(int file, char *ptr, int len)
   */
 void Error_Handler(void)
 {
-	/* USER CODE BEGIN Error_Handler_Debug */
+  /* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
 	__disable_irq();
 	while (1)
 	{
 	}
-	/* USER CODE END Error_Handler_Debug */
+  /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef USE_FULL_ASSERT
+#ifdef  USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.
@@ -450,10 +515,10 @@ void Error_Handler(void)
   */
 void assert_failed(uint8_t *file, uint32_t line)
 {
-	/* USER CODE BEGIN 6 */
+  /* USER CODE BEGIN 6 */
 	/* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-	/* USER CODE END 6 */
+  /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
 
