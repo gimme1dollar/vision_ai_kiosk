@@ -2,8 +2,12 @@
 폭 넓은 사용층을 고려한 AI-기반의 **비전인식 키오스크**     
 
 ## 개요
-소개 영상 (3분) - https://drive.google.com/file/d/1KaQiv4moTRgdAZZi3DC1T_f7XEgCQWQI/view?usp=sharing   
+![팀원](https://user-images.githubusercontent.com/20160685/103464867-5f96cf80-4d7a-11eb-9195-0ad0df3b8d86.JPG)
+
+#### 소개 영상 
+https://drive.google.com/file/d/1KaQiv4moTRgdAZZi3DC1T_f7XEgCQWQI/view?usp=sharing   
 (소개 영상 이미지 출처 - ./files/_image_reference.txt)
+
 
 ## Goal
 1) 코로나-19 시대 이후 비접촉 무인 시스템의 활성화로 인해 더 많아진 터치스크린 기반 키오스크의
@@ -11,51 +15,49 @@
 3) 비전 인식 AI를 활용해 더 나은 사용 환경을 제공하는 키오스크
 
 ## Project
-![구조도](https://user-images.githubusercontent.com/20160685/103462581-8bf62000-4d69-11eb-97fe-52b248cfe66f.png)
-프로젝트 구조
+![구조도](https://user-images.githubusercontent.com/20160685/103464856-5279e080-4d7a-11eb-96b9-679e7fc523df.JPG)
 
-### Structure
-#### _files
-회의록, 신청서, 시연 영상 링크 등 프로젝트 관련 기타 파일.
-#### firmware   
-STM B-L4S5I-IOT01A 펌웨어.
-#### hardware_3dCAD
-하드웨어 3D 도면 및 Cubicon 3D 프린터 전용 출력 파일. STL 파일을 통해 다른 CAD 툴에 import 가능.
-#### software
-Keras 기반의 연령 감지 모델 및 Tensorflow Lite API를 통한 8bit Quantized model 출력 코드. 
-#### miscs
-라즈베리파이 코드.
-#### 작업사진
-2021 서울 하드웨어해커톤 Team Viosk 작업 사진.
 
 ## Development
 ### STM32
-- STM-B-L4S5I-IOT01A
-- STM32Cube-MX
-- STM32Cube-AI
+- STM-B-L4S5I-IOT01A 
+- STM32Cube-MX : STM32 Development Tool
+- STM32Cube-AI : STM32 AI 개발
 
 ### Hardware 
-- (3D 모델링/프린팅)
-- (갤럭시 탭)
+- Fusion360 : 3D modeling
+- Galaxy Tab : mini-screen Kiosk
 
 ### Firmware
-- Rasberry Pi
+- Rasberry Pi : 사진 촬영 및 사진 전송 (UART)
 
 ### Software
-- Keras 
-- Android Studio
-   
+- Keras (ver.2.4.0) : Convolutional Neural Network for Vision Recognition
+- Kotlin : Android Application Development
+
    
 ## Test
-프로토타입 - (프로토타입 사진)   
 시연 영상 - (시연 영상 URL)
 
+
 ### Age Detection
+트레이닝 데이터셋 : https://data.vision.ee.ethz.ch/cvl/rrothe/imdb-wiki/
 
-### Height Measurement 
+#### Preprocessing (Age group distribution)
+![프리프로세싱](https://user-images.githubusercontent.com/20160685/103465050-94efed00-4d7b-11eb-9887-f54f2f342dcb.JPG)
 
-### Screen Adjustment
+#### Training/Evaluation (about 93% Accuracy)
+![정확도](https://user-images.githubusercontent.com/20160685/103465046-8efa0c00-4d7b-11eb-88bf-2392bb91d23f.JPG)
+
+### Processing Units
+![보드](https://user-images.githubusercontent.com/20160685/103464992-6eca4d00-4d7b-11eb-9632-8b5e38db922c.JPG)
+
+### Height Measurement (초음파 센서)
+![초음파](https://user-images.githubusercontent.com/20160685/103465089-f2843980-4d7b-11eb-8caa-104c3e70343a.JPG)
+
+### Screen Adjustment (스텝 모터)
+![모터](https://user-images.githubusercontent.com/20160685/103464970-50645180-4d7b-11eb-9484-88069401e48f.JPG)
 
 ### UI Diversification
-
+![UI버전](https://user-images.githubusercontent.com/20160685/103465170-aab1e200-4d7c-11eb-8c33-5f51f0a9ce15.JPG)
 
