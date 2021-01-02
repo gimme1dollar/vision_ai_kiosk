@@ -7,24 +7,69 @@
     android:orientation="vertical"
     tools:context=".MenuActivity">
 
-    <Button
-        android:id="@+id/button"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="150dp"
-        android:onClick="pay"
-        android:text="결제" />
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/iv_call"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:visibility="gone"
+            android:src="@drawable/image_border"
+            android:background="@drawable/phone" />
+
+        <ImageView
+            android:id="@+id/iv_money"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:visibility="gone"
+            android:onClick="payment"
+            android:src="@drawable/image_border"
+            android:background="@drawable/cash" />
+
+        <Button
+            android:id="@+id/bt_call"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:backgroundTint="@color/red"
+            android:text="점원 호출"
+            android:textColor="@color/white"
+            android:textSize="34sp" />
+
+        <Button
+            android:id="@+id/bt_money"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:backgroundTint="@color/green"
+            android:onClick="payment"
+            android:text="결제"
+            android:textColor="@color/white"
+            android:textSize="34sp" />
+
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_menu"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_gravity="center">
+        android:layout_gravity="center"
+        android:layout_weight="1">
 
     </androidx.recyclerview.widget.RecyclerView>
 
     <TextView
         android:id="@+id/tv_pay"
         android:layout_width="match_parent"
-        android:layout_height="150dp" />
+        android:layout_height="150dp"
+        android:padding="5dp"
+        android:scrollbars="vertical"
+        android:textSize="34sp" />
 </LinearLayout>

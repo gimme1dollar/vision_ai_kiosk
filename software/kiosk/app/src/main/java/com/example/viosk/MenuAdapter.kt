@@ -9,22 +9,37 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import java.lang.ref.WeakReference
 
-class MenuAdapter<T>(private val data: Array<Pair<String, Int>>, private var handler: T) :
-    RecyclerView.Adapter<MenuAdapter<T>.MenuViewHolder>() {
+class MenuAdapter<T>(
+    private val mData: Array<Pair<String, Int>>,
+    private var mHandler: T,
+    private var mBiggerLayout: Boolean
+) : RecyclerView.Adapter<MenuAdapter<T>.MenuViewHolder>() {
 
     inner class MenuViewHolder(view: View, listener: ListOnClickListener) : RecyclerView.ViewHolder(view), View.OnClickListener {
-        private val listenerRef: WeakReference<ListOnClickListener>
-        private val layout: LinearLayout = view.findViewById(R.id.menu_item)
-        val textView: TextView = view.findViewById(R.id.tv_menu_item)
-        val imageView: ImageView = view.findViewById(R.id.iv_menu_item)
+        private val mListenerRef: WeakReference<ListOnClickListener>
+        private val mItemLayout: LinearLayout = view.findViewById(R.id.menu_item)
+        var mMenuTextView: TextView = view.findViewById(R.id.tv_menu_item)
+        var mMenuImageView: ImageView = view.findViewById(R.id.iv_menu_item)
 
         init {
-            layout.setOnClickListener(this)
-            listenerRef = WeakReference(listener)
+            mItemLayout.setOnClickListener(this)
+            mListenerRef = WeakReference(listener)
+
+            if (mBiggerLayout) {
+                mItemLayout.layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+
+                val imageLayoutParam = mMenuImageView.layoutParams;
+                imageLayoutParam.width *= 2
+                imageLayoutParam.height *= 2
+                mMenuImageView.layoutParams = imageLayoutParam
+            }
         }
 
         override fun onClick(v: View) {
-            listenerRef.get()!!.putItem(data[adapterPosition].first)
+            mListenerRef.get()!!.putItem(mData[adapterPosition].first)
         }
     }
 
@@ -36,13 +51,13 @@ class MenuAdapter<T>(private val data: Array<Pair<String, Int>>, private var han
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.menu_item, parent, false)
 
-        return MenuViewHolder(view, handler as ListOnClickListener)
+        return MenuViewHolder(view, mHandler as ListOnClickListener)
     }
 
     override fun onBindViewHolder(holder: MenuViewHolder, position: Int) {
-        holder.textView.text = data[position].first
-        holder.imageView.setImageResource(data[position].second)
+        holder.mMenuTextView.text = mData[position].first
+        holder.mMenuImageView.setImageResource(mData[position].second)
     }
 
-    override fun getItemCount() = data.size
+    override fun getItemCount() = mData.size
 }

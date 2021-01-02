@@ -5,11 +5,14 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
-import android.content.Intent
+import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
 import android.view.View
+import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.GridLayoutManager
@@ -17,21 +20,38 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 class MenuActivity : AppCompatActivity(), MenuAdapter.ListOnClickListener {
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var viewAdapter: RecyclerView.Adapter<*>
-    private lateinit var viewManager: RecyclerView.LayoutManager
+    private lateinit var mMenuRecyclerView: RecyclerView
+    private lateinit var mRecyclerViewAdapter: RecyclerView.Adapter<*>
+    private lateinit var mRecyclerViewLayoutManager: RecyclerView.LayoutManager
 
-    private lateinit var menuItems: Array<Pair<String, Int>>
-    private var selectedItems: MutableMap<String, Int> = mutableMapOf()
+    private lateinit var mPaymentTextView: TextView
 
-    private var ageClass: Int = 0
+    private lateinit var mMenuItems: Array<Pair<String, Int>>
+    private var mSelectedMenuItems: MutableMap<String, Int> = mutableMapOf()
+
+    private var mAgeClass: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_menu)
 
-        ageClass = intent.getIntExtra("age", 0)
-        menuItems = arrayOf(
+        mPaymentTextView = findViewById(R.id.tv_pay)
+        mAgeClass = intent.getIntExtra("age", 0)
+        Log.d("btconnect", mAgeClass.toString())
+        if (mAgeClass == 0 || mAgeClass == 3) {
+            val moneyButton = findViewById<Button>(R.id.bt_money)
+            val callButton = findViewById<Button>(R.id.bt_call)
+            val moneyImage = findViewById<ImageView>(R.id.iv_money)
+            val callImage = findViewById<ImageView>(R.id.iv_call)
+
+            moneyButton.visibility = View.GONE
+            callButton.visibility = View.GONE
+            moneyImage.visibility = View.VISIBLE
+            callImage.visibility = View.VISIBLE
+            mPaymentTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 68F)
+        }
+
+        mMenuItems = arrayOf(
             Pair("햄버거 1", R.drawable.burger_1),
             Pair("햄버거 2", R.drawable.burger_2),
             Pair("햄버거 3", R.drawable.burger_3),
@@ -50,37 +70,45 @@ class MenuActivity : AppCompatActivity(), MenuAdapter.ListOnClickListener {
             Pair("스프라이트", R.drawable.sprite),
             Pair("토스트", R.drawable.toast)
         )
+        if (mAgeClass == 0) {
+            mMenuItems[1] = Pair("우유", R.drawable.milk)
+            mMenuItems[2] = Pair("쿠키", R.drawable.cookie)
+            mMenuItems[3] = Pair("스파게티", R.drawable.sphagetti)
+        } else if (mAgeClass == 3) {
+            mMenuItems[0] = Pair("햄버거", R.drawable.burger_details)
+            mMenuItems[1] = Pair("커피", R.drawable.coffee)
+            mMenuItems[2] = Pair("토스트", R.drawable.toast)
+        }
 
-        viewManager = GridLayoutManager(this, 3)
-        viewAdapter = MenuAdapter<MenuActivity>(menuItems, this)
-        recyclerView = findViewById<RecyclerView>(R.id.rv_menu).apply {
+        mRecyclerViewLayoutManager =
+            if (mAgeClass == 0 || mAgeClass == 3) LinearLayoutManager(this)
+            else GridLayoutManager(this, 3)
+        mRecyclerViewAdapter = MenuAdapter(mMenuItems, this, mAgeClass == 0 || mAgeClass == 3)
+        mMenuRecyclerView = findViewById<RecyclerView>(R.id.rv_menu).apply {
             setHasFixedSize(true)
-            layoutManager = viewManager
-            adapter = viewAdapter
+            layoutManager = mRecyclerViewLayoutManager
+            adapter = mRecyclerViewAdapter
         }
     }
 
     override fun putItem(menuName: String) {
-        if (selectedItems.containsKey(menuName)) {
-            selectedItems[menuName] = selectedItems[menuName]!!.plus(1)
+        if (mSelectedMenuItems.containsKey(menuName)) {
+            mSelectedMenuItems[menuName] = mSelectedMenuItems[menuName]!!.plus(1)
         } else {
-            selectedItems[menuName] = 1
+            mSelectedMenuItems[menuName] = 1
         }
         updateBasket()
     }
 
     private fun updateBasket() {
-        val items = mutableListOf<String>()
-        for (item in selectedItems) {
-            items.add(item.key + " x " + item.value.toString())
-        }
+        val paymentString = mSelectedMenuItems.map { (k, v) ->
+            "$k x $v"
+        }.joinToString(", ")
 
-        val str = items.joinToString(", ")
-        val textView = findViewById<TextView>(R.id.tv_pay)
-        textView.text = str
+        mPaymentTextView.text = paymentString
     }
 
-    fun pay(view: View) {
+    fun payment(view: View) {
         val dialog = PaymentDialogFragment(applicationContext)
         dialog.show(supportFragmentManager, "PaymentDialog")
     }
@@ -88,16 +116,16 @@ class MenuActivity : AppCompatActivity(), MenuAdapter.ListOnClickListener {
     class PaymentDialogFragment(private val mContext: Context) : DialogFragment() {
         override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
             return activity?.let {
-                // Use the Builder class for convenient dialog construction
                 val builder = AlertDialog.Builder(it)
                 builder.setMessage("결제하시겠습니까?")
                     .setPositiveButton("예",
-                        DialogInterface.OnClickListener { dialog, id ->
+                        DialogInterface.OnClickListener { _, _ ->
                             (mContext as Activity).finish()
-                        })
+                        }
+                    )
                     .setNegativeButton("아니오",
-                        DialogInterface.OnClickListener { dialog, id ->
-                        })
+                        DialogInterface.OnClickListener { _, _ -> }
+                    )
                 builder.create()
             } ?: throw IllegalStateException("Activity cannot be null")
         }
