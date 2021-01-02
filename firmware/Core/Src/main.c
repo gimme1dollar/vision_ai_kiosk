@@ -19,6 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -44,13 +45,18 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+volatile uint64_t us_count = 0;
+volatile uint8_t rx_data;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+uint64_t HAL_GetTickUS();
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+int __io_putchar(int ch);
+int _write(int file, char *ptr, int len);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -65,7 +71,7 @@ void SystemClock_Config(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+	uint32_t cur = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -90,8 +96,16 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
+  MX_TIM15_Init();
   /* USER CODE BEGIN 2 */
 
+	if(HAL_TIM_Base_Start_IT(&htim15) != HAL_OK) {
+		Error_Handler();
+	}
+
+	HAL_UART_Receive_IT(&huart1, &rx_data, 100);
+
+	HAL_Delay(100);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -99,6 +113,8 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+	  printf("Test\r\n");
+	  HAL_Delay(100);
 
     /* USER CODE BEGIN 3 */
   }
@@ -165,6 +181,50 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+uint64_t HAL_GetTickUS()
+{
+	return 10u*us_count;
+}
+
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim->Instance == TIM15) {
+		us_count++;
+
+		if(HAL_GetTickUS() % 1000000u == 0) {
+			HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
+		}
+	}
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart->Instance == USART1) {
+		HAL_UART_Receive_IT(&huart, &rx_data, 1);
+		HAL_UART_Transmit(&huart, &rx_data, 1, 100);
+	}
+}
+
+
+int __io_putchar(int ch)
+{
+	while (HAL_OK != HAL_UART_Transmit(&huart1, (uint8_t *) &ch, 1, 3000));
+	return ch;
+}
+
+
+int _write(int file, char *ptr, int len)
+{
+	int DataIdx;
+
+	for (DataIdx = 0; DataIdx < len; DataIdx++)
+	{
+		__io_putchar(*ptr++);
+	}
+	return len;
+}
 
 /* USER CODE END 4 */
 
