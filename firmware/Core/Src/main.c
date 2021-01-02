@@ -35,6 +35,11 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define SR_STATE_IDLE 0  // idle
+#define SR_STATE_REQ 1  // user requested to measure
+#define SR_STATE_TRIG 2 // triggering
+#define SR_STATE_WAIT 3 // waiting echo back
+#define SR_STATE_ECHO 4 // measuring echo pulse duration
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -45,13 +50,26 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
+// Timer instances and ticks
+extern TIM_HandleTypeDef htim15;
 volatile uint64_t us_count = 0;
+
+// SR-HC14
+volatile uint8_t sr_state = SR_STATE_IDLE;
+volatile uint64_t sr_trigger_us=0, sr_echo_us=0;
+volatile uint32_t sr_elapsed_us;
+
+// USART
 volatile uint8_t rx_data;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
+uint16_t SR_ReadDistance(int* sr_state, unsigned long* sr_elapsed_us);
 uint64_t HAL_GetTickUS();
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
@@ -71,7 +89,7 @@ int _write(int file, char *ptr, int len);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	uint32_t cur = 0;
+	int16_t distance = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -103,18 +121,23 @@ int main(void)
 		Error_Handler();
 	}
 
-	HAL_UART_Receive_IT(&huart1, &rx_data, 100);
+	HAL_UART_Receive_IT(&huart1, &rx_data, 1);
 
 	HAL_Delay(100);
+
+	printf("Started\r\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+	distance = SR_ReadDistance(&sr_state, &sr_elapsed_us);
+	printf("Distance %d\r\n", distance);
+	HAL_Delay(200);
+
     /* USER CODE END WHILE */
-	  printf("Test\r\n");
-	  HAL_Delay(100);
 
     /* USER CODE BEGIN 3 */
   }
@@ -182,6 +205,39 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == SR_ECHO_Pin) {
+		switch(sr_state) {
+		case SR_STATE_WAIT:
+			sr_state = SR_STATE_ECHO;
+			sr_echo_us = HAL_GetTickUS();
+			break;
+		case SR_STATE_ECHO:
+			sr_state = SR_STATE_IDLE;
+			sr_elapsed_us = HAL_GetTickUS() - sr_echo_us;
+			break;
+		}
+	}
+	else if(GPIO_Pin == BUTTON_EXTI13_Pin) {
+		printf("BTN %d\r\n", sr_state);
+	}
+}
+
+uint16_t SR_ReadDistance(int* sr_state, unsigned long* sr_elapsed_us)
+{
+	uint32_t t = HAL_GetTick();
+	*sr_state = SR_STATE_REQ;
+	while(*sr_state != SR_STATE_IDLE) {
+		if(*sr_elapsed_us > 38000u) {
+			return -1;
+		}
+		if(HAL_GetTick()-t>500u)
+			return -2;
+	}
+	return *sr_elapsed_us/58;
+}
+
 uint64_t HAL_GetTickUS()
 {
 	return 10u*us_count;
@@ -190,9 +246,27 @@ uint64_t HAL_GetTickUS()
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+
 	if(htim->Instance == TIM15) {
+		// 10 us counter
 		us_count++;
 
+		// SR Ultrasonic sensor
+		switch(sr_state) {
+		case SR_STATE_REQ:
+			sr_trigger_us = HAL_GetTickUS();
+			sr_state = SR_STATE_TRIG;
+			HAL_GPIO_WritePin(SR_TRIG_Port, SR_TRIG_Pin, GPIO_PIN_SET);
+			break;
+		case SR_STATE_TRIG:
+			if(HAL_GetTickUS() - sr_trigger_us >= 10) {
+				sr_state = SR_STATE_WAIT;
+				HAL_GPIO_WritePin(SR_TRIG_Port, SR_TRIG_Pin, GPIO_PIN_RESET);
+			}
+			break;
+		}
+
+		// Blink LED2 every seconds
 		if(HAL_GetTickUS() % 1000000u == 0) {
 			HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
 		}

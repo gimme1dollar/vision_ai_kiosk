@@ -73,6 +73,7 @@ void Error_Handler(void);
 #define BUTTON_EXTI13_EXTI_IRQn EXTI15_10_IRQn
 #define ARD_A5_Pin GPIO_PIN_0
 #define ARD_A5_GPIO_Port GPIOC
+#define ARD_A5_EXTI_IRQn EXTI0_IRQn
 #define ARD_A4_Pin GPIO_PIN_1
 #define ARD_A4_GPIO_Port GPIOC
 #define ARD_A3_Pin GPIO_PIN_2
@@ -99,8 +100,6 @@ void Error_Handler(void);
 #define ARD_A1_GPIO_Port GPIOC
 #define ARD_A0_Pin GPIO_PIN_5
 #define ARD_A0_GPIO_Port GPIOC
-#define ARD_D3_Pin GPIO_PIN_0
-#define ARD_D3_GPIO_Port GPIOB
 #define ARD_D6_Pin GPIO_PIN_1
 #define ARD_D6_GPIO_Port GPIOB
 #define ARD_D8_Pin GPIO_PIN_2
@@ -215,6 +214,10 @@ void Error_Handler(void);
 #define ISM43362_DRDY_EXTI1_Pin GPIO_PIN_1
 #define ISM43362_DRDY_EXTI1_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */
+#define SR_ECHO_Port ARD_A5_GPIO_Port
+#define SR_ECHO_Pin ARD_A5_Pin
+#define SR_TRIG_Port ARD_A4_GPIO_Port
+#define SR_TRIG_Pin ARD_A4_Pin
 
 /* USER CODE END Private defines */
 
