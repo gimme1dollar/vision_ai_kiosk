@@ -50,6 +50,7 @@ extern "C" {
 #define __ANGLE_TO_STEP__(x) ((float)x/0.9f)
 #define __STEP_SET_ANGLE__(x) step_limit=__ANGLE_TO_STEP__(x)
 #define __STEP_SET_SPEED__(dps) TIM2->PSC=(8000000u/(dps*TIM2->ARR))*18
+#define __STEP_SET_MODE__(mode) step_mode=mode
 #define __BUF_SIZE__(buf) (sizeof(buf)/sizeof(*buf))
 
 /* USER CODE END EM */
@@ -108,6 +109,7 @@ void Error_Handler(void);
 #define ARD_D6_GPIO_Port GPIOB
 #define ARD_D8_Pin GPIO_PIN_2
 #define ARD_D8_GPIO_Port GPIOB
+#define ARD_D8_EXTI_IRQn EXTI2_IRQn
 #define DFSDM1_DATIN2_Pin GPIO_PIN_7
 #define DFSDM1_DATIN2_GPIO_Port GPIOE
 #define ISM43362_RST_Pin GPIO_PIN_8
@@ -187,8 +189,6 @@ void Error_Handler(void);
 #define PMOD_RESET_GPIO_Port GPIOD
 #define PMOD_SPI2_SCK_Pin GPIO_PIN_1
 #define PMOD_SPI2_SCK_GPIO_Port GPIOD
-#define PMOD_IRQ_EXTI12_Pin GPIO_PIN_2
-#define PMOD_IRQ_EXTI12_GPIO_Port GPIOD
 #define PMOD_UART2_CTS_Pin GPIO_PIN_3
 #define PMOD_UART2_CTS_GPIO_Port GPIOD
 #define PMOD_UART2_RTS_Pin GPIO_PIN_4
@@ -229,6 +229,9 @@ void Error_Handler(void);
 #define STEP_PULSE_Pin ARD_D4_Pin
 #define STEP_DIR_Pin ARD_D5_Pin
 #define STEP_EN_Pin ARD_D9_Pin
+
+#define LIMSW_BOT_Port ARD_D8_GPIO_Port
+#define LIMSW_BOT_Pin ARD_D8_Pin
 
 /* USER CODE END Private defines */
 

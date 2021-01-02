@@ -46,6 +46,9 @@
 // STEPPER MOTOR
 #define STEP_DIRECTION_CW 0
 #define STEP_DIRECTION_CCW 1
+#define STEP_MODE_DISABLE 0
+#define STEP_MODE_STALL 1
+#define STEP_MODE_DYNAMIC 2
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -73,7 +76,7 @@ volatile uint8_t rx_data;
 // STEPPER MOTOR
 volatile uint32_t step_cnt=0;
 volatile uint32_t step_limit = 0;
-volatile uint8_t step_enable = 0;
+volatile uint8_t step_mode = STEP_MODE_STALL;
 
 /* USER CODE END PV */
 
@@ -82,8 +85,6 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
-void STEP_stall(void);
-void STEP_disable(void);
 void STEP_turn(uint16_t angle, int8_t direction, uint16_t dps);
 uint16_t SR_ReadDistance(int* sr_state, unsigned long* sr_elapsed_us);
 uint64_t HAL_GetTickUS();
@@ -135,6 +136,7 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
+
 	if(HAL_TIM_Base_Start_IT(&htim15) != HAL_OK) {
 		Error_Handler();
 	}
@@ -156,7 +158,7 @@ int main(void)
 	//printf("Distance %d\r\n", distance);
 	//HAL_Delay(200);
 #endif
-	  if(step_enable) {
+	  if(step_mode == STEP_MODE_DYNAMIC) {
 		if(phase) {
 			STEP_turn(180*10, STEP_DIRECTION_CW, 180*12);
 			HAL_Delay(4000);
@@ -167,8 +169,11 @@ int main(void)
 		}
 		phase = (phase+1) % 2;
 	  }
-	  else
-		  STEP_stall();
+	  else{
+
+		  //STEP_disable();
+		 // STEP_stall();
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -249,29 +254,26 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			sr_state = SR_STATE_IDLE;
 			sr_elapsed_us = HAL_GetTickUS() - sr_echo_us;
 			break;
+		default:
+			sr_state = SR_STATE_IDLE;
 		}
 	}
 	else if(GPIO_Pin == BUTTON_EXTI13_Pin) {
-		step_enable = !step_enable;
-		printf("STEP_ENABLE %d, %d\r\n", step_enable, TIM2->PSC);
+		if(step_mode == STEP_MODE_STALL)
+			step_mode = STEP_MODE_DYNAMIC;
+		else
+			step_mode = STEP_MODE_STALL;
+
+		printf("STEP_ENABLE %d, %d\r\n", step_mode, TIM2->PSC);
 	}
-}
-
-void STEP_disable(void)
-{
-	HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_SET);
-}
-
-void STEP_stall(void)
-{
-	HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
-	step_limit = 0;
+	else if(GPIO_Pin == LIMSW_BOT_Pin) {
+		printf("Limit switch pushed\r\n");
+		step_mode = STEP_MODE_DISABLE;
+	}
 }
 
 void STEP_turn(uint16_t angle, int8_t direction, uint16_t dps)
 {
-	HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
-
   	TIM2->PSC = (12000000u/(dps*TIM2->ARR))*8;
 	step_limit = __ANGLE_TO_STEP__(angle);
 	if(direction == STEP_DIRECTION_CW)
@@ -279,6 +281,7 @@ void STEP_turn(uint16_t angle, int8_t direction, uint16_t dps)
 	else
 		HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_RESET);
 	step_cnt = step_cnt % 4;
+	step_mode = STEP_MODE_DYNAMIC;
 }
 
 
@@ -322,6 +325,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				HAL_GPIO_WritePin(SR_TRIG_Port, SR_TRIG_Pin, GPIO_PIN_RESET);
 			}
 			break;
+		default:
+			sr_state = SR_STATE_IDLE;
 		}
 
 		// Blink LED2 every seconds
@@ -330,9 +335,23 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 	}
 	else if(htim->Instance == TIM2) {
-		if(step_cnt < step_limit) {
-			step_cnt++;
-			HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
+		switch(step_mode) {
+		case STEP_MODE_DISABLE:
+			HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_SET);
+			break;
+		case STEP_MODE_STALL:
+			HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
+			step_limit = 0;
+			break;
+		case STEP_MODE_DYNAMIC:
+			HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
+			if(step_cnt < step_limit) {
+				step_cnt++;
+				HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
+			}
+			break;
+		default:
+			step_mode = STEP_MODE_STALL;
 		}
 	}
 }
