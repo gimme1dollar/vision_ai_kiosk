@@ -49,6 +49,12 @@ https://drive.google.com/file/d/1KaQiv4moTRgdAZZi3DC1T_f7XEgCQWQI/view?usp=shari
 #### Training/Evaluation (about 93% Accuracy)
 ![정확도](https://user-images.githubusercontent.com/20160685/103465046-8efa0c00-4d7b-11eb-88bf-2392bb91d23f.JPG)
 
+#### Lightweigrht (below 200KB)
+![경량화](https://user-images.githubusercontent.com/20160685/103465267-43e0f880-4d7d-11eb-850c-6569bd7df9bc.JPG)
+
+#### Test on STM32
+![테스트on보드](https://user-images.githubusercontent.com/20160685/103465252-2449d000-4d7d-11eb-9c24-b19ad9feac3f.JPG)
+
 ### Processing Units
 ![보드](https://user-images.githubusercontent.com/20160685/103464992-6eca4d00-4d7b-11eb-9632-8b5e38db922c.JPG)
 
