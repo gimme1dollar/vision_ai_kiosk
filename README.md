@@ -37,7 +37,10 @@ https://drive.google.com/file/d/1KaQiv4moTRgdAZZi3DC1T_f7XEgCQWQI/view?usp=shari
 
    
 ## Test
-시연 영상 - (시연 영상 URL)
+![proto](https://user-images.githubusercontent.com/20160685/103474375-8854ae80-4de6-11eb-84bb-dd130c3a2df6.jpeg)
+
+시연 영상   
+https://drive.google.com/file/d/1vzOOIthxaEInF-no1CoXh7OKscDMb2IW/view?usp=sharing
 
 
 ### Age Detection
@@ -45,6 +48,9 @@ https://drive.google.com/file/d/1KaQiv4moTRgdAZZi3DC1T_f7XEgCQWQI/view?usp=shari
 
 #### Preprocessing (Age group distribution)
 ![프리프로세싱](https://user-images.githubusercontent.com/20160685/103465050-94efed00-4d7b-11eb-9887-f54f2f342dcb.JPG)
+
+#### Processed Data (on RasberryPi)
+![processed](https://user-images.githubusercontent.com/20160685/103474402-ceaa0d80-4de6-11eb-95b5-68cf5102c133.jpeg)
 
 #### Training/Evaluation (about 93% Accuracy)
 ![정확도](https://user-images.githubusercontent.com/20160685/103465046-8efa0c00-4d7b-11eb-88bf-2392bb91d23f.JPG)
@@ -61,9 +67,12 @@ https://drive.google.com/file/d/1KaQiv4moTRgdAZZi3DC1T_f7XEgCQWQI/view?usp=shari
 ### Height Measurement (초음파 센서)
 ![초음파](https://user-images.githubusercontent.com/20160685/103465089-f2843980-4d7b-11eb-8caa-104c3e70343a.JPG)
 
-### Screen Adjustment (스텝 모터)
+### Height Adjustment Algorithm
+![높이코드](https://user-images.githubusercontent.com/20160685/103474440-2fd1e100-4de7-11eb-913b-8de8fcef6ce0.JPG)
+
+### Hardware UI Variation (스텝 모터)
 ![모터](https://user-images.githubusercontent.com/20160685/103464970-50645180-4d7b-11eb-9484-88069401e48f.JPG)
 
-### UI Diversification
+### Software UI Variation
 ![UI버전](https://user-images.githubusercontent.com/20160685/103465170-aab1e200-4d7c-11eb-8c33-5f51f0a9ce15.JPG)
 
