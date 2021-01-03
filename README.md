@@ -48,7 +48,9 @@
 </p>
 
 ##### Training 결과, 90%의 정확도를 보임
+<p align="center">
 <img src="https://user-images.githubusercontent.com/20160685/103465046-8efa0c00-4d7b-11eb-88bf-2392bb91d23f.JPG" height="256px"/>
+</p>
 
 ##### Parameter 축소, quantization 등을 통해 여전히 높은 정확도를 보이는 lightweight 모델 생성 및 STM32 보드에 탑재
 <p align="center">
@@ -65,11 +67,16 @@
 </p>
 
 ##### Age detection 결과에 맞춰, UI를 변경
-<img src="https://user-images.githubusercontent.com/20160685/103465170-aab1e200-4d7c-11eb-8c33-5f51f0a9ce15.JPG" height="256px"/>
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/20160685/103465170-aab1e200-4d7c-11eb-8c33-5f51f0a9ce15.JPG" height="256px"/>
+</p>
 
 ## Contributers
-<img src="https://user-images.githubusercontent.com/20160685/103464867-5f96cf80-4d7a-11eb-9195-0ad0df3b8d86.JPG" width="50%"/>
-- 김현성 (https://github.com/hyunsungkim)
-- 김주환 (https://github.com/robotjuhwan)
-- 이주용 (https://github.com/gimme1dollar)
-- 조승혁 (https://github.com/seunghyukcho)
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/20160685/103464867-5f96cf80-4d7a-11eb-9195-0ad0df3b8d86.JPG" width="50%"/>
+</p>
+
+- 김현성 (https://github.com/hyunsungkim).   
+- 김주환 (https://github.com/robotjuhwan).   
+- 이주용 (https://github.com/gimme1dollar).   
+- 조승혁 (https://github.com/seunghyukcho).   
