@@ -1,0 +1,85 @@
+RUN Stats    : batches=200 dur=2257.297s tfx=2252.055s 13.878KiB/s (wb=31250.000KiB,rb=3.125KiB) 
+ 
+Results for 200 inference(s) @120/120MHz (macc:51607476) 
+ device      : 0x470/STM32L4Rxxx @120MHz/120MHz (FPU is present) lat=5 ART: ICen DCen 
+ duration    : 1245.855 ms (average) 
+ CPU cycles  : 149502656 (average) 
+ cycles/MACC : 2.90 (average for all layers) 
+ c_nodes     : 8 
+ 
+Clayer  id  desc                          oshape          fmt       ms        (%)    
+------------------------------------------------------------------------------------- 
+0       0   10009/(Nonlinearity)          (200, 200, 1)   int8      7.297       0.6%   
+1       1   10011/(Merged Conv2d / Pool)  (24, 24, 48)    int8      181.528    14.6%   
+2       3   10004/(2D Convolutional)      (24, 24, 64)    int8      379.748    30.5%   
+3       4   10011/(Merged Conv2d / Pool)  (11, 11, 64)    int8      467.198    37.5%   
+4       6   10011/(Merged Conv2d / Pool)  (5, 5, 120)     int8      209.650    16.8%   
+5       9   10005/(Dense)                 (1, 1, 4)       int8      0.418       0.0%   
+6       9   10009/(Nonlinearity)          (1, 1, 4)       float32   0.003       0.0%   
+7       10  10009/(Nonlinearity)          (1, 1, 4)       float32   0.013       0.0%   
+                                                                    1245.855 (total) 
+ 
+-- Running STM32 C-model - done (elapsed time 2257.550s) 
+-- Running original model 
+.......................................................................................... 
+-- Running original model - done (elapsed time 47.814s) 
+ 
+Saving data in "C:\Users\HyunsungKim\.stm32cubemx" folder 
+ "network_val_m_inputs_1.csv" NOT created (SAMPLE DATA size limit exceeded: 40000 > 1024) 
+ creating "network_val_m_outputs_1.csv" (only the first 64 SAMPLES are saved) dtype=[float32] 
+ "network_val_c_inputs_1.csv" NOT created (SAMPLE DATA size limit exceeded: 40000 > 1024) 
+ creating "network_val_c_outputs_1.csv" (only the first 64 SAMPLES are saved) dtype=[float32] 
+ creating "network_val_io.npz" 
+ 
+Accuracy report #1 for the generated stm32 C-model 
+---------------------------------------------------------------------------------------------------- 
+NOTE: Computed against the provided ground truth values 
+ 
+ acc=94.00%, rmse=0.156175, mae=0.039023, l2r=0.321913 
+ 
+ 4 classes (200 samples) 
+ ---------------------------- 
+ C0        5    .    .    .   
+ C1        .   84    1    .   
+ C2        .    5   75    1   
+ C3        .    3    2   24   
+ 
+Accuracy report #1 for the reference model 
+---------------------------------------------------------------------------------------------------- 
+NOTE: Computed against the provided ground truth values 
+ 
+ acc=94.00%, rmse=0.156170, mae=0.039795, l2r=0.323019 
+ 
+ 4 classes (200 samples) 
+ ---------------------------- 
+ C0        5    .    .    .   
+ C1        .   84    1    .   
+ C2        .    5   75    1   
+ C3        .    3    2   24   
+ 
+Cross accuracy report #1 (reference vs C-model) 
+---------------------------------------------------------------------------------------------------- 
+NOTE: the output of the reference model is used as ground truth/reference value 
+ 
+ acc=100.00%, rmse=0.006823, mae=0.001519, l2r=0.014064 
+ 
+ 4 classes (200 samples) 
+ ---------------------------- 
+ C0        5    .    .    .   
+ C1        .   92    .    .   
+ C2        .    .   78    .   
+ C3        .    .    .   25   
+ 
+ 
+Evaluation report (summary) 
+-------------------------------------------------------------------------------------------------- 
+Mode                 acc      rmse      mae       l2r       tensor                                
+-------------------------------------------------------------------------------------------------- 
+stm32 C-model #1     94.00%   0.156175  0.039023  0.321913  nl_10 [ai_float, (1, 1, 4), m_id=10]  
+original model #1    94.00%   0.156170  0.039795  0.323019  nl_10 [ai_float, (1, 1, 4), m_id=10]  
+X-cross #1           100.00%  0.006823  0.001519  0.014064  nl_10 [ai_float, (1, 1, 4), m_id=10]  
+ 
+ 
+Creating report file C:\Users\HyunsungKim\.stm32cubemx\network_validate_report.txt 
+elapsed time (validate): 2306.87s 
+Validation ended
