@@ -1,7 +1,7 @@
 {
     "_allocate_inputs": 0,
     "_allocate_outputs": 0,
-    "cli_parameters": "generate --name network -m C:/Users/Hyunsungkim/Downloads/model_200x200_quant_8b.tflite --type tflite --compression 1 --verbosity 1 --workspace C:\\Users\\HYUNSU~1\\AppData\\Local\\Temp\\mxAI_workspace236825942945007061862369323427316 --output C:\\Users\\Hyunsungkim\\.stm32cubemx",
+    "cli_parameters": "generate --name network -m C:/Users/Hyunsungkim/Downloads/model_200x200_quant_8b.tflite --type tflite --compression 1 --verbosity 1 --workspace C:\\Users\\HYUNSU~1\\AppData\\Local\\Temp\\mxAI_workspace25342662224000106759916690688758 --output C:\\Users\\Hyunsungkim\\.stm32cubemx",
     "cli_version": {
         "major": 1,
         "micro": 0,
@@ -12,13 +12,13 @@
         "factor": null,
         "layers": {}
     },
-    "date_time": "Sun Jan  3 05:06:21 2021",
+    "date_time": "Sun Jan  3 05:34:00 2021",
     "error": 0,
     "error_str": [],
     "evaluation_measures": [],
     "evaluation_status": "NOT EVALUATED",
     "exec_cmd": "generate",
-    "exec_duration": 0.8500032424926758,
+    "exec_duration": 0.7369937896728516,
     "hash": "ae50ff1db78ec5079ba7c6bb81fa71c0",
     "inputs": [
         "conv2d_16_input"

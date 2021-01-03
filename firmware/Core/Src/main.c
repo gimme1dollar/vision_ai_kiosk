@@ -133,7 +133,8 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 	int16_t distance = 0;
-	int8_t phase = 0;
+	uint8_t tx_data[3] = {0,'\r','\n'};
+	uint8_t phase = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -154,7 +155,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  //MX_UART4_Init();
+  MX_UART4_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
@@ -166,6 +167,7 @@ int main(void)
 
 	HAL_UART_Receive_IT(&huart1, &rx_data, 1);
 	HAL_UART_Receive_IT(&huart2, &rx_data, 1);
+	HAL_UART_Receive_IT(&huart4, &rx_data, 1);
 
 	if (HAL_TIM_Base_Start_IT(&htim15) != HAL_OK)
 	{
@@ -176,44 +178,60 @@ int main(void)
 		Error_Handler();
 	}
 
-
 	printf("Started\r\n");
-	HAL_Delay(1000);
+	HAL_Delay(100);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		distance = SR_ReadDistance(&sr_state, &sr_elapsed_us);
+		distance = 0;
+		for(int i=0; i<3; i++) {
+			uint16_t d = SR_ReadDistance(&sr_state, &sr_elapsed_us);
+			distance += d;
+			HAL_Delay(100);
+		}
+		distance /= 3;
 		printf("Distance %d\r\n", distance);
-		HAL_Delay(200);
-		if(distance < 40) {
-			if (HAL_TIM_Base_Stop_IT(&htim15) != HAL_OK)
-			{
-				Error_Handler();
-			}
-			if (HAL_TIM_Base_Stop_IT(&htim2) != HAL_OK)
-			{
-				Error_Handler();
-			}
-			int age = age_detection();
-			printf("Max label %d\r\n", age);
-			char tx_data = age +'0';
-			HAL_UART_Transmit(&huart4, &tx_data, 1, 100);
 
-		   tx_data = '\r';
-			HAL_UART_Transmit(&huart4, &tx_data, 1, 100);
-			if (HAL_TIM_Base_Start_IT(&htim15) != HAL_OK)
-			{
-				Error_Handler();
+		if(phase == 0) {
+#if 1
+			if(distance < 60) {
+				if (HAL_TIM_Base_Stop_IT(&htim15) != HAL_OK)
+					Error_Handler();
+				if (HAL_TIM_Base_Stop_IT(&htim2) != HAL_OK)
+					Error_Handler();
+
+				int age = age_detection();
+				printf("Max label %d\r\n", age);
+
+				if (HAL_TIM_Base_Start_IT(&htim15) != HAL_OK)
+					Error_Handler();
+				if (HAL_TIM_Base_Start_IT(&htim2) != HAL_OK)
+					Error_Handler();
+
+				tx_data[0] = age +'0';
+				HAL_UART_Transmit(&huart4, tx_data, 2, 100);
+				HAL_Delay(5000);
+				HAL_UART_Transmit(&huart4, tx_data, 2, 100);
+				phase = 1;
 			}
-			if (HAL_TIM_Base_Start_IT(&htim2) != HAL_OK)
-			{
-				Error_Handler();
-			}
+#endif
+		}
+		else if(phase == 1) {
+			int height = 160 + (79-distance)/20;
+			int pos = (height-160)*(14200-1000)/20 + 1000;
+			STEP_turn(pos);
+			HAL_Delay(pos);
+			phase = 2;
+		}
+		else if(phase == 2) {
+			if(distance>60)
+				phase = 0;
 		}
 
+		HAL_Delay(500);
 #if 0
 
 		if (step_init == 0) {
@@ -232,26 +250,7 @@ int main(void)
          /* code */
       }
 #endif
-		/*
-	  if(step_mode == STEP_MODE_DYNAMIC) {
-		if(phase) {
-			STEP_turn(180*10, STEP_DIRECTION_CW, 180*12);
-			HAL_Delay(4000);
-		}
-		else {
-			STEP_turn(180*10, STEP_DIRECTION_CCW, 180*12);
-			HAL_Delay(4000);
-		}
-		phase = (phase+1) % 2;
-	  }
-	  else{
 
-		  //STEP_disable();
-		 // STEP_stall();
-	  }
-
-
-*/
 #if 0
     /* USER CODE END WHILE */
 
@@ -472,6 +471,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		else
 			HAL_UART_Transmit(&huart2, &rx_data, 1, 1);
 
+	}
+	if (huart->Instance == UART4)
+	{
+		HAL_UART_Receive_IT(&huart4, &rx_data, 1);
+		HAL_UART_Transmit(&huart4, &rx_data, 1, 100);
 	}
 }
 
