@@ -14,6 +14,7 @@ ST B-L4S5I-IOT01A 보드 펌웨어.
 Raspberry pi로부터 2Mbps의 속도로 UART 통신을 통해 이미지 데이터를 받아옴. 안정적인 통신을 위해 RTS/CTS를 통한 하드웨어 흐름제어가 필수적. RTS/CTS 흐름제어가 가능한 UART2 사용을 위해 B-L4S5I-IOT01A 보드 뒷면의 점퍼 전극을 다음과 같이 연결해야함.
 
 SB12,16,19,20 - Close (납땜으로 연결)
+
 SB14,15,18,21 - Open (기존의 연결 제거)
 
 ![pmod](./figs/pmod.png)
@@ -23,23 +24,31 @@ SB14,15,18,21 - Open (기존의 연결 제거)
 
 ***SR-HC04***
 SR_HC04_TRIG : Trigger pin
+
 SR_HC04_ECHO : Echo pin
 
 ***MW-VSTB24D1S-v2***
 STEP_PULSE : CLK+
+
 STEP_DIR : DIR+
+
 STEP_EN : ENA+
 
 ***HC-05***
 HC_05_TX : TX
+
 HC_05_RX : RX
+
 baud 9600bps
 
 ***Raspberry Pi 4***
 [Reference][rpi-rts-cts] 
 Raspi_RX : pin 10
+
 Raspi_TX : pin 8
+
 Raspi_CTS : pin 36
+
 Raspi-RTS : pin 11
 
 
