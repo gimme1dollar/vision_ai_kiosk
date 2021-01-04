@@ -5,6 +5,9 @@
 - [시연 영상](https://drive.google.com/file/d/1vzOOIthxaEInF-no1CoXh7OKscDMb2IW/view?usp=sharing)
 - [발표 자료](https://drive.google.com/file/d/1hJ28Oalcn_aavSERfy1kXunzW1Yjd5MP/view?usp=sharing)
 
+### 🎉 수상 🎉
+[2021 서울 하드웨어 해커톤](https://www.seoulhackathon.org/692) 에서 우수상을 수상했습니다.
+
 ## 개요
 ### Goal
 1. 코로나-19 시대 이후 비접촉 무인 시스템의 활성화로 인해 더 많아진 터치스크린 기반 키오스크의
