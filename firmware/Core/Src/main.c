@@ -140,29 +140,29 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
 
   /* Configure the system clock */
-  SystemClock_Config();
+	SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_UART4_Init();
-  MX_USART1_UART_Init();
-  MX_USART2_UART_Init();
-  MX_USART3_UART_Init();
-  MX_TIM15_Init();
-  MX_TIM2_Init();
-  MX_CRC_Init();
-  MX_X_CUBE_AI_Init();
+	MX_GPIO_Init();
+	MX_UART4_Init();
+	MX_USART1_UART_Init();
+	MX_USART2_UART_Init();
+	MX_USART3_UART_Init();
+	MX_TIM15_Init();
+	MX_TIM2_Init();
+	MX_CRC_Init();
+	MX_X_CUBE_AI_Init();
   /* USER CODE BEGIN 2 */
 
 	HAL_UART_Receive_IT(&huart1, &rx_data, 1);
@@ -196,7 +196,6 @@ int main(void)
 		printf("Distance %d\r\n", distance);
 
 		if(phase == 0) {
-#if 1
 			if(distance < 60) {
 				if (HAL_TIM_Base_Stop_IT(&htim15) != HAL_OK)
 					Error_Handler();
@@ -217,14 +216,17 @@ int main(void)
 				HAL_UART_Transmit(&huart4, tx_data, 2, 100);
 				phase = 1;
 			}
-#endif
 		}
 		else if(phase == 1) {
-			int height = 160 + (79-distance)/20;
-			int pos = (height-160)*(14200-1000)/20 + 1000;
-			STEP_turn(pos);
-			HAL_Delay(pos);
-			phase = 2;
+			if(distance<46.5&&distance>26.5) {
+				STEP_turn((double)(46.5-distance)/26.5*14200);
+            //200-distance -> 180  14200
+            //200-distance -> 153.5  0
+            //14200:26.5 = k:a
+			}
+			else {
+				STEP_turn(7100);
+			}
 		}
 		else if(phase == 2) {
 			if(distance>60)
@@ -232,24 +234,7 @@ int main(void)
 		}
 
 		HAL_Delay(500);
-#if 0
 
-		if (step_init == 0) {
-      }
-		// 180 = 23 / 160 = 79
-      else
-      {
-    	  int height = (79-distance)
-    	  uint32_t pos =
-         STEP_turn(14200);
-
-         HAL_Delay(14200);
-
-         STEP_turn(1000);
-         HAL_Delay(13200);//26.5
-         /* code */
-      }
-#endif
 
 #if 0
     /* USER CODE END WHILE */
@@ -267,57 +252,57 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+	RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Configure the main internal regulator output voltage
   */
-  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST) != HAL_OK)
-  {
-    Error_Handler();
-  }
+	if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST) != HAL_OK)
+	{
+		Error_Handler();
+	}
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
-  RCC_OscInitStruct.MSIState = RCC_MSI_ON;
-  RCC_OscInitStruct.MSICalibrationValue = 0;
-  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
-  RCC_OscInitStruct.PLL.PLLM = 1;
-  RCC_OscInitStruct.PLL.PLLN = 60;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
-  RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
+	RCC_OscInitStruct.MSIState = RCC_MSI_ON;
+	RCC_OscInitStruct.MSICalibrationValue = 0;
+	RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
+	RCC_OscInitStruct.PLL.PLLM = 1;
+	RCC_OscInitStruct.PLL.PLLN = 60;
+	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+	RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
+	RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+	{
+		Error_Handler();
+	}
   /** Initializes the CPU, AHB and APB buses clocks
   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+	|RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1|RCC_PERIPHCLK_USART2
-                              |RCC_PERIPHCLK_USART3|RCC_PERIPHCLK_UART4;
-  PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
-  PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
-  PeriphClkInit.Usart3ClockSelection = RCC_USART3CLKSOURCE_PCLK1;
-  PeriphClkInit.Uart4ClockSelection = RCC_UART4CLKSOURCE_PCLK1;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-  {
-    Error_Handler();
-  }
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1|RCC_PERIPHCLK_USART2
+	|RCC_PERIPHCLK_USART3|RCC_PERIPHCLK_UART4;
+	PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
+	PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
+	PeriphClkInit.Usart3ClockSelection = RCC_USART3CLKSOURCE_PCLK1;
+	PeriphClkInit.Uart4ClockSelection = RCC_UART4CLKSOURCE_PCLK1;
+	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+	{
+		Error_Handler();
+	}
 }
 
 /* USER CODE BEGIN 4 */
@@ -328,11 +313,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	{
 		switch (sr_state)
 		{
-		case SR_STATE_WAIT:
+			case SR_STATE_WAIT:
 			sr_state = SR_STATE_ECHO;
 			sr_echo_us = HAL_GetTickUS();
 			break;
-		case SR_STATE_ECHO:
+			case SR_STATE_ECHO:
 			sr_state = SR_STATE_IDLE;
 			sr_elapsed_us = HAL_GetTickUS() - sr_echo_us;
 			break;
@@ -357,8 +342,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 void STEP_turn(uint32_t count_step)
 {
-   step_target = count_step;
-   step_mode = STEP_MODE_DYNAMIC;
+	step_target = count_step;
+	step_mode = STEP_MODE_DYNAMIC;
 }
 
 uint16_t SR_ReadDistance(int *sr_state, unsigned long *sr_elapsed_us)
@@ -393,12 +378,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		// SR Ultrasonic sensor
 		switch (sr_state)
 		{
-		case SR_STATE_REQ:
+			case SR_STATE_REQ:
 			sr_trigger_us = HAL_GetTickUS();
 			sr_state = SR_STATE_TRIG;
 			HAL_GPIO_WritePin(SR_TRIG_Port, SR_TRIG_Pin, GPIO_PIN_SET);
 			break;
-		case SR_STATE_TRIG:
+			case SR_STATE_TRIG:
 			if (HAL_GetTickUS() - sr_trigger_us >= 10)
 			{
 				sr_state = SR_STATE_WAIT;
@@ -416,43 +401,43 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	else if (htim->Instance == TIM2)
 	{
 		if (step_init == 0)
-      {
-         HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_SET);
-         HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
-         HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
-      }
-      else
-      {
-         switch (step_mode)
-         {
-         case STEP_MODE_DISABLE:
-            HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_SET);
-            break;
-         case STEP_MODE_STALL:
-            HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
-            break;
-         case STEP_MODE_DYNAMIC:
-            HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
-            if (step_cnt < step_target)
-            {
-               step_cnt++;
-               HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_RESET);
-               HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
-            }
-            else if(step_cnt > step_target)
-            {
-               step_cnt--;
-               HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_SET);
-               HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
-            }
-            else
-            {
-               step_mode = STEP_MODE_STALL;
-            }
+		{
+			HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
+		}
+		else
+		{
+			switch (step_mode)
+			{
+				case STEP_MODE_DISABLE:
+				HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_SET);
+				break;
+				case STEP_MODE_STALL:
+				HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
+				break;
+				case STEP_MODE_DYNAMIC:
+				HAL_GPIO_WritePin(STEP_EN_Port, STEP_EN_Pin, GPIO_PIN_RESET);
+				if (step_cnt < step_target)
+				{
+					step_cnt++;
+					HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_RESET);
+					HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
+				}
+				else if(step_cnt > step_target)
+				{
+					step_cnt--;
+					HAL_GPIO_WritePin(STEP_DIR_Port, STEP_DIR_Pin, GPIO_PIN_SET);
+					HAL_GPIO_TogglePin(STEP_PULSE_Port, STEP_PULSE_Pin);
+				}
+				else
+				{
+					step_mode = STEP_MODE_STALL;
+				}
 
-            break;
-         }
-      }
+				break;
+			}
+		}
 	}
 }
 

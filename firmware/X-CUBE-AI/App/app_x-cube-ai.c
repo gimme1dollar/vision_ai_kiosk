@@ -199,7 +199,10 @@ void MX_X_CUBE_AI_Init(void)
 void MX_X_CUBE_AI_Process(float arr_in[], float arr_out[])
 {
     /* USER CODE BEGIN 4 */
-
+  /* Here we directly code the procedure in the main loop instead of in the template functions
+   * for simpliticy. Note that `app_x-cube-ai.c` will be reset if the code is re-generated from
+   * the CubeMX. Don't forget to restore this file after generating the code.
+   */ 
   int res = -1;
   uint8_t *in_data = NULL;
   uint8_t *out_data = NULL;
@@ -234,26 +237,22 @@ void MX_X_CUBE_AI_Process(float arr_in[], float arr_out[])
     }
 
     /* 2 - main loop */
-   // do {
+
+
       /* 1 - acquire and pre-process input data */
-      //res = acquire_and_process_data(in_data);
       for(ai_size i=0; i< AI_NETWORK_IN_1_SIZE; i++)
     	  ((ai_float *)in_data)[i] = arr_in[i];
 
       /* 2 - process the data - call inference engine */
-     // if (res == 0)
        res = ai_run(in_data, out_data);
       /* 3- post-process the predictions */
 
-		int max = 0;
-		for (ai_size i = 0; i < 6; i++){
-			arr_out[i] = ((ai_float*)out_data)[i];
-			if(arr_out[i] > arr_out[max])
-				max = i;
+  		int max = 0;
+  		for (ai_size i = 0; i < 6; i++){
+  			arr_out[i] = ((ai_float*)out_data)[i];
+  			if(arr_out[i] > arr_out[max])
+  				max = i;
 		}
-//      if (res == 0)
-//        res = post_process(out_data);
-  //  } while (res==0);
   }
 
   if (res) {
