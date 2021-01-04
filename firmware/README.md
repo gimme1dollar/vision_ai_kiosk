@@ -21,22 +21,21 @@ SB14,15,18,21 - Open (기존의 연결 제거)
 ### Connections to peripherals
 ![pinmap](./figs/pinmap.png)
 
-***SR-HC04***
+***SR-HC04***  
 SR_HC04_TRIG : Trigger pin  
 SR_HC04_ECHO : Echo pin
 
-***MW-VSTB24D1S-v2***
+***MW-VSTB24D1S-v2***  
 STEP_PULSE : CLK+  
 STEP_DIR : DIR+  
 STEP_EN : ENA+  
 
-***HC-05***
+***HC-05***  
 HC_05_TX : TX  
-HC_05_RX : RX
-
+HC_05_RX : RX  
 baud 9600bps
 
-***Raspberry Pi 4***
+***Raspberry Pi 4***  
 [Reference][rpi-rts-cts] 
 Raspi_RX : pin 10  
 Raspi_TX : pin 8  
