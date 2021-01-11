@@ -74,12 +74,12 @@
     <img src="https://user-images.githubusercontent.com/20160685/103465170-aab1e200-4d7c-11eb-8c33-5f51f0a9ce15.JPG" height="256px"/>
 </p>
 
-## Contributers
+## Contributors
 <p align="center">
     <img src="https://user-images.githubusercontent.com/20160685/103464867-5f96cf80-4d7a-11eb-9195-0ad0df3b8d86.JPG" width="50%"/>
 </p>
 
-- 김현성 (https://github.com/hyunsungkim).   
-- 김주환 (https://github.com/robotjuhwan).   
-- 이주용 (https://github.com/gimme1dollar).   
-- 조승혁 (https://github.com/seunghyukcho).   
+- 김현성(HW) - https://github.com/hyunsungkim
+- 김주환(HW) - https://github.com/robotjuhwan  
+- 이주용(SW) - https://github.com/gimme1dollar  
+- 조승혁(SW) - https://github.com/seunghyukcho 
